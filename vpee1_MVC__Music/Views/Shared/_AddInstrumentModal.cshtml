@@ -1,0 +1,16 @@
+﻿ <!-- Modal-->
+<div class="modal fade" id="addInstrumentModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Add New Instrument</h4>
+            </div>
+            <div class="modal-body">
+                @{ var d = new vpee1_MVC__Music.Models.Instrument();
+                    <partial name="_InstrumentCreate" model="d" />
+                }
+            </div>
+        </div>
+    </div>
+</div>

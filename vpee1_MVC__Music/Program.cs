@@ -29,6 +29,8 @@ namespace vpee1_MVC__Music
                     var context = services.GetRequiredService<MusicContext>();
                     context.Database.Migrate();
                     MusicSeedData.Initialise(services);
+                    var identityContext = services.GetRequiredService<ApplicationDbContext>();
+                    ApplicationSeedData.SeedAsync(identityContext, services).Wait();
                 }
 
                 catch (Exception ex)

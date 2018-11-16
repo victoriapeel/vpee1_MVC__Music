@@ -16,7 +16,7 @@ namespace vpee1_MVC__Music.Data.MusicMigrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("MO")
-                .HasAnnotation("ProductVersion", "2.1.3-rtm-32065")
+                .HasAnnotation("ProductVersion", "2.1.4-rtm-31024")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
@@ -26,6 +26,11 @@ namespace vpee1_MVC__Music.Data.MusicMigrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256);
+
+                    b.Property<DateTime?>("CreatedOn");
+
                     b.Property<int>("GenreID");
 
                     b.Property<string>("Name")
@@ -34,11 +39,25 @@ namespace vpee1_MVC__Music.Data.MusicMigrations
 
                     b.Property<decimal>("Price");
 
-                    b.Property<DateTime>("YearProduced");
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate();
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(256);
+
+                    b.Property<DateTime?>("UpdatedOn");
+
+                    b.Property<string>("YearProduced")
+                        .IsRequired()
+                        .HasMaxLength(4);
 
                     b.HasKey("AlbumID");
 
                     b.HasIndex("GenreID");
+
+                    b.HasIndex("YearProduced", "Name")
+                        .IsUnique();
 
                     b.ToTable("Albums");
                 });
@@ -79,6 +98,11 @@ namespace vpee1_MVC__Music.Data.MusicMigrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256);
+
+                    b.Property<DateTime?>("CreatedOn");
+
                     b.Property<DateTime>("DOB");
 
                     b.Property<string>("FirstName")
@@ -96,8 +120,18 @@ namespace vpee1_MVC__Music.Data.MusicMigrations
 
                     b.Property<long>("PhoneNumber");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate();
+
                     b.Property<string>("SIN")
-                        .IsRequired();
+                        .IsRequired()
+                        .HasMaxLength(9);
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(256);
+
+                    b.Property<DateTime?>("UpdatedOn");
 
                     b.HasKey("MusicianID");
 

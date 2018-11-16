@@ -62,7 +62,7 @@ namespace vpee1_MVC__Music.Data
                         new Album
                         {
                             Name = "The Real Thing",
-                            YearProduced = DateTime.Parse("1989-06-20"),
+                            YearProduced = "1989",
                             Price = 15.99m,
                             GenreID = context.Genres.FirstOrDefault(d => d.Name == "Rock").GenreID
                         },
@@ -70,7 +70,7 @@ namespace vpee1_MVC__Music.Data
                          new Album
                          {
                              Name = "Doggy Style",
-                             YearProduced = DateTime.Parse("1993-11-23"),
+                             YearProduced = "1993",
                              Price = 31.99m,
                              GenreID = context.Genres.FirstOrDefault(d => d.Name == "Rap").GenreID
                          },
@@ -78,7 +78,7 @@ namespace vpee1_MVC__Music.Data
                          new Album
                          {
                              Name = "Damaged",
-                             YearProduced = DateTime.Parse("1981-12-05"),
+                             YearProduced = "1981",
                              Price = 17.99m,
                              GenreID = context.Genres.FirstOrDefault(d => d.Name == "Punk").GenreID
                          },
@@ -86,7 +86,7 @@ namespace vpee1_MVC__Music.Data
                          new Album
                          {
                              Name = "Arkology",
-                             YearProduced = DateTime.Parse("1997-07-14"),
+                             YearProduced = "1997",
                              Price = 21.99m,
                              GenreID = context.Genres.FirstOrDefault(d => d.Name == "Reggae").GenreID
                          },
@@ -94,7 +94,7 @@ namespace vpee1_MVC__Music.Data
                          new Album
                          {
                              Name = "Hi-Bop Ska",
-                             YearProduced = DateTime.Parse("1994-10-19"),
+                             YearProduced = "1994",
                              Price = 25.99m,
                              GenreID = context.Genres.FirstOrDefault(d => d.Name == "Ska").GenreID
                          },
@@ -102,7 +102,7 @@ namespace vpee1_MVC__Music.Data
                          new Album
                          {
                              Name = "Radio Bemba Sound System",
-                             YearProduced = DateTime.Parse("2002-09-17"),
+                             YearProduced = "2002",
                              Price = 15.99m,
                              GenreID = context.Genres.FirstOrDefault(d => d.Name == "World").GenreID
                          },
@@ -110,7 +110,7 @@ namespace vpee1_MVC__Music.Data
                          new Album
                          {
                              Name = "Blue Train",
-                             YearProduced = DateTime.Parse("1957-09-15"),
+                             YearProduced = "1957",
                              Price = 25.99m,
                              GenreID = context.Genres.FirstOrDefault(d => d.Name == "Hard Bop").GenreID
                          }
@@ -231,13 +231,13 @@ namespace vpee1_MVC__Music.Data
                     context.Musicians.AddRange(
                         new Musician
                         {
-                            FirstName = "John",
-                            MiddleName = "William",
-                            LastName = "Coltrane",
-                            PhoneNumber = 1235559999,
-                            DOB = DateTime.Parse("1926-09-23"),
-                            SIN = "123456789",
-                            InstrumentID = context.Instruments.FirstOrDefault(d => d.Name == "Saxophone").InstrumentID
+                            FirstName = "Amy",
+                            MiddleName = "Jade",
+                            LastName = "Winehouse",
+                            PhoneNumber = 1235559992,
+                            DOB = DateTime.Parse("1983-09-14"),
+                            SIN = "123456889",
+                            InstrumentID = context.Instruments.FirstOrDefault(d => d.Name == "Vocal").InstrumentID
 
                         },
 
@@ -286,6 +286,39 @@ namespace vpee1_MVC__Music.Data
                             InstrumentID = context.Instruments.FirstOrDefault(d => d.Name == "Saxophone").InstrumentID
                         }
                     );
+                    context.SaveChanges();
+                }
+                //This approach to seeding data uses int and string arrays with loops to
+                //create the data using random values
+                Random random = new Random();
+
+                //Create a collection of the primary keys of the Musicians
+                int[] musicianIDs = context.Musicians.Select(a => a.MusicianID).ToArray();
+                int[] instrumentIDs = context.Instruments.Select(a => a.InstrumentID).ToArray();
+                //Plays
+                //Add a few instruments to each musician
+                if (!context.Plays.Any())
+                {
+                    //i loops through the primary keys of the musicians
+                    //j is just a counter so we add a few instruments to a musician
+                    //k lets us step through all instruments so we can make sure each gets used
+                    int k = 0;//Start with the first instrument
+                    foreach (int i in musicianIDs)
+                    {
+                        int howMany = random.Next(5);//add a few instruments to a musician
+                        howMany = (howMany > instrumentIDs.Count()) ? 8 : howMany; //Don't try to assign more instruments then are in the system
+                        for (int j = 1; j <= howMany; j++)
+                        {
+                            k = (k >= instrumentIDs.Count()) ? 0 : k;
+                            Plays p = new Plays()
+                            {
+                                MusicianID = i,
+                                InstrumentID = instrumentIDs[k]
+                            };
+                            context.Plays.Add(p);
+                            k++;
+                        }
+                    }
                     context.SaveChanges();
                 }
             }

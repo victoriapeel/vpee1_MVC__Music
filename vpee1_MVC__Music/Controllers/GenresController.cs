@@ -140,11 +140,30 @@ namespace vpee1_MVC__Music.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var genre = await _context.Genres.FindAsync(id);
-            _context.Genres.Remove(genre);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                _context.Genres.Remove(genre);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException dex)
+            {
+                if (dex.InnerException.Message.Contains("FK_Albums_Genres_GenreID"))
+                {
+                    ModelState.AddModelError("", "Cannot delete an Genre assigned to an album");
+                }
+                else if (dex.InnerException.Message.Contains("FK_Songs_Genres_GenreID"))
+                {
+                    ModelState.AddModelError("", "Cannot delete an Genre assigned to song");
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Unable to save changes. Try again, and if the problem persists see your system administrator.");
+                }
+            }
+            return View(genre);
         }
-
+        
         private bool GenreExists(int id)
         {
             return _context.Genres.Any(e => e.GenreID == id);

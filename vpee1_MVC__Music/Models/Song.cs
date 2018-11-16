@@ -12,6 +12,7 @@ namespace vpee1_MVC__Music.Models
         {
 
             this.Performances = new HashSet<Performance>();
+            Performances = new HashSet<Performance>();
 
         }
         public int SongID { get; set; }
@@ -22,13 +23,13 @@ namespace vpee1_MVC__Music.Models
         public string Title { get; set; }
 
         [Display(Name = "Genre")]
-        [Required(ErrorMessage = "You must enter a genre")]
+        [Range(1, int.MaxValue, ErrorMessage = "You must enter a genre")]
         public int GenreID { get; set; }
 
         public virtual Genre Genre { get; set; }
 
         [Display(Name = "Album")]
-        [Required(ErrorMessage = "You must enter an album")]
+        [Range(1, int.MaxValue, ErrorMessage = "You must enter an album")]
         public int AlbumID { get; set; }
 
         public virtual Album Album { get; set; }

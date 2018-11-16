@@ -1,0 +1,17 @@
+﻿
+@model vpee1_MVC__Music.Models.Instrument
+<form asp-action="Create" asp-controller="Instruments" id="createInstrumentForm">
+    <div class="row">
+        <div class="col-md-12">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" id="submitCreate" class="btn btn-default" />
+            </div>
+        </div>
+    </div>
+</form>

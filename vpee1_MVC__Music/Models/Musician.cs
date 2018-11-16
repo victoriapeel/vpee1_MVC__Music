@@ -6,14 +6,12 @@ using System.Threading.Tasks;
 
 namespace vpee1_MVC__Music.Models
 {
-    public class Musician
+    public class Musician : Auditable, IValidatableObject
     {
         public Musician()
         {
-
-            this.Performances = new HashSet<Performance>();
-            this.Plays = new HashSet<Plays>();
-
+            Performances = new HashSet<Performance>();
+            Plays = new HashSet<Plays>();
         }
 
         public int MusicianID { get; set; }
@@ -23,49 +21,93 @@ namespace vpee1_MVC__Music.Models
         {
             get
             {
-                return FirstName + (string.IsNullOrEmpty(MiddleName) ? " " : (" " + (char?)MiddleName[0]
-                    + ". ").ToUpper()) + LastName;
+                return FirstName
+                    + (string.IsNullOrEmpty(MiddleName) ? " " :
+                        (" " + (char?)MiddleName[0] + ". ").ToUpper())
+                    + LastName;
             }
         }
+
+        public string FormalName
+        {
+            get
+            {
+                return LastName + ", " + FirstName
+                    + (string.IsNullOrEmpty(MiddleName) ? "" :
+                        (" " + (char?)MiddleName[0] + ".").ToUpper());
+            }
+        }
+
+        public int Age
+        {
+            get
+            {
+                DateTime today = DateTime.Today;
+                int a = today.Year - DOB.Year
+                    - ((today.Month < DOB.Month || (today.Month == DOB.Month && today.Day < DOB.Day) ? 1 : 0));
+                return a; /*Note: You could add .PadLeft(3) but spaces disappear in a web page. */
+            }
+        }
+
+        public string FormattedSIN
+        {
+            get
+            {
+                return SIN.Substring(0, 3) + "-" + SIN.Substring(3, 3) + "-" + SIN.Substring(6, 3);
+            }
+        }
+
         [Display(Name = "First Name")]
-        [Required(ErrorMessage="You must enter a first name")]
-        [StringLength(30, ErrorMessage ="First name can only be 30 characters long")]
-        public String FirstName { get; set; }
+        [Required(ErrorMessage = "You cannot leave the first name blank.")]
+        [StringLength(30, ErrorMessage = "First name cannot be more than 30 characters long.")]
+        public string FirstName { get; set; }
 
         [Display(Name = "Middle Name")]
-        [StringLength(30, ErrorMessage = "Middle name can only be 30 characters long")]
-        public String MiddleName { get; set; }
+        [StringLength(30, ErrorMessage = "Middle name cannot be more than 30 characters long.")]
+        public string MiddleName { get; set; }
 
         [Display(Name = "Last Name")]
-        [Required(ErrorMessage = "You must enter a last name")]
-        [StringLength(50, ErrorMessage = "Last name can only be 50 characters long")]
-        public String LastName { get; set; }
+        [Required(ErrorMessage = "You cannot leave the last name blank.")]
+        [StringLength(50, ErrorMessage = "Last name cannot be more than 50 characters long.")]
+        public string LastName { get; set; }
 
-        [Display(Name = "Phone Number")]
-        [Required(ErrorMessage = "You must enter a phone number")]
-        [RegularExpression("^\\d{10}$", ErrorMessage = "Phone Number must be 10 digits")]
+        [Required(ErrorMessage = "Phone number is required.")]
+        [RegularExpression("^\\d{10}$", ErrorMessage = "Please enter a valid 10-digit phone number (no spaces).")]
         [DataType(DataType.PhoneNumber)]
-        [DisplayFormat(DataFormatString ="{0:(###) ###-####}", ApplyFormatInEditMode = false)]
+        [DisplayFormat(DataFormatString = "{0:(###) ###-####}", ApplyFormatInEditMode = false)]
         public Int64 PhoneNumber { get; set; }
 
-        [Display(Name = "Date of Birth")]
-        [Required(ErrorMessage = "You must enter a DOB")]
         [DataType(DataType.Date)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         public DateTime DOB { get; set; }
 
-        [Display(Name = "SI Number")]
-        [Required(ErrorMessage = "You must enter an SIN")]
-        [RegularExpression("^\\d{9}$", ErrorMessage = "SIN must contain 10 digits")]
-        public String SIN { get; set; }
+        [Required(ErrorMessage = "You cannot leave the SIN blank.")]
+        [RegularExpression("^\\d{9}$", ErrorMessage = "The SIN must be exactly 9 numeric digits.")]
+        [StringLength(9)]
+        public string SIN { get; set; }
 
-        [Display(Name = "Instrument ID")]
-        [Required(ErrorMessage = "You must enter an instrument ID")]
+        [ScaffoldColumn(false)]
+        [Timestamp]
+        public Byte[] RowVersion { get; set; }
+
+        [Display(Name = "Principal Instrument")]
+        [Range(1,int.MaxValue,ErrorMessage = "You must select the principal instrument the musician plays.")]
         public int InstrumentID { get; set; }
+        public Instrument Instrument { get; set; }
 
-        public virtual Instrument Instrument { get; set; }
+        public ICollection<Performance> Performances { get; set; }
+        public ICollection<Plays> Plays { get; set; }
 
-        public virtual ICollection<Performance> Performances { get; set; }
-        public virtual ICollection<Plays> Plays { get; set; }
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (DOB > DateTime.Today)
+            {
+                yield return new ValidationResult("Date of Birth cannot be in the future.", new[] { "DOB" });
+            }
+            else if (Age <= 5)
+            {
+                yield return new ValidationResult("Musician must be at least 5 years old.", new[] { "DOB" });
+            }
+        }
     }
 }

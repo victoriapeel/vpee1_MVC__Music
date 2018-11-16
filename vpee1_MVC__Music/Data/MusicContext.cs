@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using vpee1_MVC__Music.Models;
 
@@ -12,6 +14,25 @@ namespace vpee1_MVC__Music.Data
         public MusicContext (DbContextOptions<MusicContext> options)
             : base(options)
         {
+            UserName = "SeedData";
+        }
+
+        public MusicContext(DbContextOptions<MusicContext> options, IHttpContextAccessor httpContextAccessor)
+            : base(options)
+        {
+            _httpContextAccessor = httpContextAccessor;
+            UserName = _httpContextAccessor.HttpContext?.User.Identity.Name;
+            //UserName = (UserName == null) ? "Unknown" : UserName;
+            UserName = UserName ?? "Unknown";
+        }
+
+        //To give access to IHttpContextAccessor for Audit Data with IAuditable
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        //Property to hold the UserName value
+        public string UserName
+        {
+            get; private set;
         }
 
         public DbSet<Album> Albums { get; set; }
@@ -66,11 +87,53 @@ namespace vpee1_MVC__Music.Data
                 .HasIndex(p => p.SIN)
                 .IsUnique();
 
+            modelBuilder.Entity<Album>()
+                .HasIndex(a => new { a.YearProduced, a.Name})
+                .IsUnique();
+
             modelBuilder.Entity<Performance>()
                 .HasKey(t => new { t.SongID, t.MusicianID });
 
             modelBuilder.Entity<Plays>()
                 .HasKey(t => new { t.InstrumentID, t.MusicianID });
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            OnBeforeSaving();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            OnBeforeSaving();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        private void OnBeforeSaving()
+        {
+            var entries = ChangeTracker.Entries();
+            foreach (var entry in entries)
+            {
+                if (entry.Entity is IAuditable trackable)
+                {
+                    var now = DateTime.UtcNow;
+                    switch (entry.State)
+                    {
+                        case EntityState.Modified:
+                            trackable.UpdatedOn = now;
+                            trackable.UpdatedBy = UserName;
+                            break;
+
+                        case EntityState.Added:
+                            trackable.CreatedOn = now;
+                            trackable.CreatedBy = UserName;
+                            trackable.UpdatedOn = now;
+                            trackable.UpdatedBy = UserName;
+                            break;
+                    }
+                }
+            }
         }
     }
 }

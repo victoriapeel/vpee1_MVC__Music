@@ -48,7 +48,7 @@ namespace vpee1_MVC__Music.Controllers
         // GET: Albums/Create
         public IActionResult Create()
         {
-            ViewData["GenreID"] = new SelectList(_context.Set<Genre>(), "GenreID", "Name");
+            ViewData["GenreID"] = new SelectList(_context.Set<Genre>().OrderBy(n => n.Name), "GenreID", "Name");
             return View();
         }
 
@@ -59,13 +59,27 @@ namespace vpee1_MVC__Music.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("AlbumID,Name,YearProduced,Price,GenreID")] Album album)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(album);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                if (ModelState.IsValid)
+                {
+                    _context.Add(album);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
             }
-            ViewData["GenreID"] = new SelectList(_context.Set<Genre>(), "GenreID", "Name", album.GenreID);
+            catch (DbUpdateException dex)
+            {
+                if (dex.InnerException.Message.Contains("IX_Album_AlbumSummary"))
+                {
+                    ModelState.AddModelError("AlbumSummary", "Combination of Name and Year Produced must be unique. A record already exists with this combination");
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Unable to save changes. Try again, and if the problem persists see your system administrator.");
+                }
+            }
+        ViewData["GenreID"] = new SelectList(_context.Set<Genre>(), "GenreID", "Name", album.GenreID);
             return View(album);
         }
 
@@ -91,7 +105,7 @@ namespace vpee1_MVC__Music.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("AlbumID,Name,YearProduced,Price,GenreID")] Album album)
+        public async Task<IActionResult> Edit(int id, [Bind("AlbumID,Name,YearProduced,Price,GenreID")] Album album, Byte[] RowVersion)
         {
             if (id != album.AlbumID)
             {
@@ -102,18 +116,44 @@ namespace vpee1_MVC__Music.Controllers
             {
                 try
                 {
+                    _context.Entry(album).Property("RowVersion").OriginalValue = RowVersion;
                     _context.Update(album);
                     await _context.SaveChangesAsync();
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateConcurrencyException ex)// Added for concurrency
                 {
-                    if (!AlbumExists(album.AlbumID))
+                    var exceptionEntry = ex.Entries.Single();
+                    var clientValues = (Album)exceptionEntry.Entity;
+                    var databaseEntry = exceptionEntry.GetDatabaseValues();
+                    if (databaseEntry == null)
                     {
-                        return NotFound();
+                        ModelState.AddModelError("",
+                            "Unable to save changes. The Album was deleted by another user.");
                     }
                     else
                     {
-                        throw;
+                        var databaseValues = (Album)databaseEntry.ToObject();
+                        if (databaseValues.Name != clientValues.Name)
+                            ModelState.AddModelError("Name", "Current value: "
+                                + databaseValues.Name);
+                        if (databaseValues.YearProduced != clientValues.YearProduced)
+                            ModelState.AddModelError("Year Produced", "Current value: "
+                                + String.Format("^\\d{4}$", databaseValues.YearProduced));
+                        if (databaseValues.Price != clientValues.Price)
+                            ModelState.AddModelError("Price", "Current value: "
+                                +  databaseValues.Price);
+                        if (databaseValues.GenreID != clientValues.GenreID)
+                        {
+                            Genre databaseGenre = await _context.Genres.SingleOrDefaultAsync(i => i.GenreID == databaseValues.GenreID);
+                            ModelState.AddModelError("GenreID", $"Current value: {databaseGenre?.Name}");
+                        }
+                        ModelState.AddModelError(string.Empty, "The record you attempted to edit "
+                                + "was modified by another user after you received your values. The "
+                                + "edit operation was canceled and the current values in the database "
+                                + "have been displayed. If you still want to save your version of this record, click "
+                                + "the Save button again. Otherwise click the 'Back to List' hyperlink.");
+                        album.RowVersion = (byte[])databaseValues.RowVersion;
+                        ModelState.Remove("RowVersion");
                     }
                 }
                 return RedirectToAction(nameof(Index));
@@ -147,9 +187,24 @@ namespace vpee1_MVC__Music.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var album = await _context.Albums.FindAsync(id);
-            _context.Albums.Remove(album);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                _context.Albums.Remove(album);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException dex)
+            {
+                if (dex.InnerException.Message.Contains("FK_"))
+                {
+                    ModelState.AddModelError("", "Cannot delete and album which still contains songs");
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Unable to save changes. Try again, and if the problem persists see your system administrator.");
+                }
+            }
+            return View(album);
         }
 
         private bool AlbumExists(int id)
